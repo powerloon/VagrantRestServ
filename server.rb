@@ -2,61 +2,53 @@
 
 require 'sinatra'
 require 'json'
+require 'sinatra-websocket'
 
 puts "Starting server..."
 
-
-
-class CommandRunner  
-  def initialize  
-    # Instance variables  
-    @os ||= (
-      host_os = RbConfig::CONFIG['host_os']
-      case host_os
-      when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
-        :windows
-      when /darwin|mac os/
-        :macosx
-      when /linux/
-        :linux
-      when /solaris|bsd/
-        :unix
-      else
-        raise Error::WebDriverError, "unknown os: #{host_os.inspect}"
-      end
-    )  
-  end  
-  
-  def run_command(command)
-    # if @os == :windows
-    #   res = run_win(command)
-    # else
-    #   res = run_shell(command)
-    # end
-    # res
-    `#{command}`
-  end 
-  
-  # def run_shell(command)
-  #   #system(command)
-  #   system("ifconfig")
-  # end
-
-  # def run_win(command)
-  #   `#{command}`    
-  # end 
-  
-end    
-
+set :server, 'thin'
+set :sockets, []
 
 configure do
   set :public_folder, '.'
 end
 
-cr = CommandRunner.new
+get '/' do
+  
+
+  cmd = "blender -b mball.blend -o //renders/ -F JPEG -x 1 -f 1" 
+  begin
+    PTY.spawn( cmd ) do |stdout, stdin, pid|
+      begin
+        # Do stuff with the output here. Just printing to show it works
+        stdout.each { |line| print line }
+      rescue Errno::EIO
+        puts "Errno:EIO error, but this probably just means " +
+              "that the process has finished giving output"
+      end
+    end
+  rescue PTY::ChildExited
+    puts "The child process exited!"
+  end
+end
 
 get '/' do
-  send_file File.expand_path('index.html', settings.public_folder)
+  if !request.websocket?
+    send_file File.expand_path('index.html', settings.public_folder)
+  else
+    request.websocket do |ws|
+      ws.onopen do       
+        settings.sockets << ws
+      end
+      ws.onmessage do |msg|
+        EM.next_tick { settings.sockets.each{|s| s.send(msg) } }
+      end
+      ws.onclose do
+        warn("websocket closed")
+        settings.sockets.delete(ws)
+      end
+    end
+  end
 end
 
 post '/run' do  
