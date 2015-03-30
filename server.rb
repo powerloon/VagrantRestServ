@@ -23,29 +23,38 @@ get '/' do
       ws.onopen do       
         settings.sockets << ws
       end
-      ws.onmessage do |msg|
-        puts "******************** #{msg}"
-        if msg.length > 0
+      ws.onmessage do |json|
+        data = JSON.parse(json)
+        command = data["command"]
+        path = data["path"]
+
+        puts "----------------------------------"
+        puts "command: #{command}"
+        puts "path:    #{path}"
+
+
+        # if command.length > 0 && path.length > 0
 
           settings.sockets.each do |s|
             s.send("")
           end
           begin
-            t = Thread.new do
-              IO.popen(msg, :err=>[:child, :out]) do |out|
-                out.each_line do |line|
-                  puts line 
-                  puts line.inspect 
-                  settings.sockets.each do |s|
-                    s.send(line)
+            # Dir.chdir(path){
+              t = Thread.new do
+                IO.popen(command, :err=>[:child, :out]) do |out|
+                  out.each_line do |line|
+                    puts line 
+                    settings.sockets.each do |s|
+                      s.send("#{line}")
+                    end
                   end
-                end
+                end                
               end
-            end
+            # }
           rescue 
             puts "Error sending output"
           end 
-        end
+        # end
       end
       ws.onclose do
         warn("websocket closed")

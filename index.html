@@ -6,6 +6,7 @@
   </head>
   <body>
     <input type="text" id="command" placeholder="insert command here" value="ls"></input>
+    <input type="text" id="path" placeholder="insert path here" value="/"></input>
     <button id="command-button">Run</button>
     <button id="clear-button">Clear</button>
     <p id="result"></p>
@@ -13,7 +14,8 @@
     <!--<script type="text/javascript" src="js/myjs.js"></script>-->
     <script>
       window.onload = function(){
-          var input = $('#command');
+          var command = $('#command');
+          var path = $('#path');
           var commandButton = $('#command-button');
           var clearButton= $('#clear-button');
           var p = $('#result');
@@ -26,13 +28,11 @@
             p.append('websocket closed<br>'); 
           }
           ws.onmessage = function(m){
-            console.log("msg");
-            console.log(m.data);
             p.append(m.data + "<br>");
           };
 
           commandButton.click(function(){
-            ws.send(input.val());  
+            ws.send(JSON.stringify({ command: command.val(), path: path.val()}));  
           });
           
           clearButton.click(function(){
