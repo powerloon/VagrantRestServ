@@ -7,41 +7,37 @@
   <body>
     <input type="text" id="command" placeholder="insert command here" value="ls"></input>
     <button id="command-button">Run</button>
+    <button id="clear-button">Clear</button>
     <p id="result"></p>
     <script type="text/javascript" src="//code.jquery.com/jquery-2.1.3.min.js"></script>
     <!--<script type="text/javascript" src="js/myjs.js"></script>-->
     <script>
-      $('#command-button').click(function(){
-          var command = $('#command').val();
-          $.post( "/run", JSON.stringify({ command: command })).done(function( data ) {
-            $('#result').html(data);
-          }).error(function(){
-            $('#result').html("INVALID COMMAND");
-          });
-      });
-
-
       window.onload = function(){
-        (function(){
-          var show = function(el){
-            return function(msg){ el.innerHTML = msg + '<br />' + el.innerHTML; }
-          }(document.getElementById('msgs'));
+          var input = $('#command');
+          var commandButton = $('#command-button');
+          var clearButton= $('#clear-button');
+          var p = $('#result');
 
-          var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
-          ws.onopen    = function()  { show('websocket opened'); };
-          ws.onclose   = function()  { show('websocket closed'); }
-          ws.onmessage = function(m) { show('websocket message: ' +  m.data); };
+          var ws = new WebSocket('ws://' + window.location.host + window.location.pathname);
+          ws.onopen = function(){ 
+            p.append('websocket opened<br>'); 
+          };
+          ws.onclose = function(){ 
+            p.append('websocket closed<br>'); 
+          }
+          ws.onmessage = function(m){
+            console.log("msg");
+            console.log(m.data);
+            p.append(m.data + "<br>");
+          };
 
-          var sender = function(f){
-            var input     = document.getElementById('input');
-            input.onclick = function(){ input.value = "" };
-            f.onsubmit    = function(){
-              ws.send(input.value);
-              input.value = "send a message";
-              return false;
-            }
-          }(document.getElementById('form'));
-        })();
+          commandButton.click(function(){
+            ws.send(input.val());  
+          });
+          
+          clearButton.click(function(){
+            p.empty();
+          });
       }
     </script>
   </body>
