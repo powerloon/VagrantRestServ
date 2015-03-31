@@ -39,8 +39,8 @@ get '/' do
             s.send("")
           end
           begin
-            # Dir.chdir(path){
-              t = Thread.new do
+            t = Thread.new do
+              Dir.chdir(path){
                 IO.popen(command, :err=>[:child, :out]) do |out|
                   out.each_line do |line|
                     puts line 
@@ -49,8 +49,8 @@ get '/' do
                     end
                   end
                 end                
-              end
-            # }
+              }
+            end
           rescue 
             puts "Error sending output"
           end 
